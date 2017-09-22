@@ -1,0 +1,25 @@
+{
+  "name": "snapanalyzer",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hamidzr/snap-analyzer.git"
+  },
+  "author": "Hamid Zare",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hamidzr/snap-analyzer/issues"
+  },
+  "homepage": "https://github.com/hamidzr/snap-analyzer#readme",
+  "dependencies": {
+    "fs-extra": "^4.0.2",
+    "json-query": "^2.2.2",
+    "lodash": "^4.17.4",
+    "snap2js": "^1.0.1"
+  }
+}
