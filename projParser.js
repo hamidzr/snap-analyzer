@@ -6,10 +6,12 @@ const fse = require('fs-extra'),
     _ = require('lodash');
 
 const xmlPath = process.argv[2];
+if (! xmlPath) throw('pass in a project or role xml');
 let inputString = fse.readFileSync(xmlPath, 'utf8');
 let rootEl = new XmlElement();
 rootEl.parseString(inputString);
 
+// detects if the current file is a project or a role
 // requires rootEl
 function detectType(rootEl){
     let type;
@@ -33,28 +35,57 @@ function extractRoles(rootEl){
 
 let showTag = el => el.tag;
 
+
+// cleans a role
+function cleanup(projEl) {
+    /*
+     * parts that we can get rid of are 
+     * replay ( maybe use later ) 
+     * thumbnail
+     */ 
+}
+
 // parse role
 // NOTICE the element with project tag is the role!
 function parseRole(projEl){
-        var stage = projEl.childNamed('stage');
-        var sprites = stage.childNamed('sprites').childrenNamed('sprite');
+    console.log('parsing a role');
+    var stage = projEl.childNamed('stage');
+    var sprites = stage.childNamed('sprites').childrenNamed('sprite');
+    let replayEvents = projEl.childNamed('replay').childrenNamed('events');
+    // var globalVars = parseInitialVariables(projEl.childNamed('variables').children);
+    var variables = projEl.childNamed('variables').children;
+    var tempo = +stage.attributes.tempo;
+    var blocks = projEl.childNamed('blocks').children;
+    // let metadata = {
+    //     variables: globalVars,
+    //     tempo: tempo,
+    //     stage: Snap2Js.parseStage(stage),
+    //     customBlocks: blocks.map(Snap2Js.parseBlockDefinition)
+    // };
+    let metadata = {
+        variables: variables,
+        roleBlocks: blocks,
+        sprites
+    }
+    return metadata;
+}
 
-        var globalVars = parseInitialVariables(projEl.childNamed('variables').children);
-        var tempo = +stage.attributes.tempo;
-        var blocks = projEl.childNamed('blocks').children;
-        // let metadata = {
-        //     variables: globalVars,
-        //     tempo: tempo,
-        //     stage: Snap2Js.parseStage(stage),
-        //     customBlocks: blocks.map(Snap2Js.parseBlockDefinition)
-        // };
-        let metadata = {
-            variables: globalVars,
-            blocks,
-            sprites
-        }
-        console.log('parsed role', metadata.sprites[0].children.map(showTag));
-        return metadata;
+function parseSprite(spriteEl){
+    let variables = spriteEl.childNamed('variables');
+    let blocks = spriteEl.childNamed('blocks');
+    let scripts = spriteEl.childNamed('scripts').children;
+
+    let sprite = {
+        variables,
+        blocks,
+        scripts
+    };
+    return sprite;
+}
+
+function parseScript(scriptEl){
+    // TODO update
+    return scriptEl.children.map( blk => blk.attributes.s);
 }
 
 
@@ -77,29 +108,38 @@ const baseStructure = {
     roles: ['room.role', roleStructure]
 };
 
-function filterProject(json, structure){
-    let proj = {};
-    Object.keys(structure).forEach(key => {
-        let instruction = structure[key];
-        if (typeof instruction === 'string'){
-            proj[key] = jq(instruction, {data: json}).value;
-        }else if (Array.isArray(instruction)){
-            let [selector, struct] = instruction;
-            proj[key] = [];
-            jq(instruction, {data: json}).value.forEach(item => {
-                proj[key].push(filterProject(item, struct));
-            })
-        }else{
-            // custom fn TODO how to pick atters in stage
-            // assuming it is an obj and then filter? 
+// function filterProject(json, structure){
+//     let proj = {};
+//     Object.keys(structure).forEach(key => {
+//         let instruction = structure[key];
+//         if (typeof instruction === 'string'){
+//             proj[key] = jq(instruction, {data: json}).value;
+//         }else if (Array.isArray(instruction)){
+//             let [selector, struct] = instruction;
+//             proj[key] = [];
+//             jq(instruction, {data: json}).value.forEach(item => {
+//                 proj[key].push(filterProject(item, struct));
+//             })
+//         }else{
+//             // custom fn TODO how to pick atters in stage
+//             // assuming it is an obj and then filter? 
 
-        }
+//         }
+//     })
+//     return proj;
+// }
+
+
+extractRoles(rootEl).forEach(roleEl => {
+    let role = parseRole(roleEl);
+    role.sprites.forEach( spriteEl => {
+        let sprite = parseSprite(spriteEl);
+        sprite.scripts.forEach(scriptEl => {
+            console.log(parseScript(scriptEl));
+        });
     })
-    return proj;
-}
+});
 
-
-extractRoles(rootEl).map(role => parseRole(role));
 // console.log(detectType(rootEl));
 // parseString(xml, function (err, result) {
 //     let proj = filterProject(result, baseStructure);
