@@ -1,9 +1,11 @@
 const fse = require('fs-extra'),
+    fs = require('fs'),
     jq = require('json-query'),
     inspect = require('util').inspect,
     _ = require('lodash');
 
-const DATASET_PATH = '/home/hmd/datasets/scratchProjs/text/';
+// get the dataset directory location
+const DATASET_PATH = process.argv[2] || './data/';
 
 // const filePath = process.argv[2];
 // if (! filePath) throw('pass in a project or role xml');
@@ -35,22 +37,41 @@ class Project {
     }
 
     scripts(){
-        return this.sprites().map(sprite => sprite.scripts);
+        return this.sprites().map(sprite => sprite.scripts).filter(i => i);
+    }
+
+    toString(){
+        return this.sprites().map(sprite => {
+            if (!sprite.scripts) return;
+            return sprite.scripts.map(script => script.join(' ')).join('. ');
+        }).join('. ');
     }
 
 }
 
-
+let outFile = 'scratchProjectTexts.txt';
+let outStream = fs.createWriteStream(outFile);
+let corruptedProjs = 0;
 fse.readdir(DATASET_PATH)
-    .then( fileNames => {
-        console.log('processing #', fileNames.length);
-        fileNames.forEach( fileName => {
-            // console.log('reading', fileName);
-            let project = new Project(DATASET_PATH + fileName);
-            let data = project.scripts();
-            console.log(data);
-            console.log('=========');
+    .then( projNames => {
+        let numProjs = projNames.length;
+        const REPORT_EVERY = Math.floor(numProjs / 100); // config the fraction 1/reportf
+        console.log('processing #', numProjs);
+        projNames.forEach( (fileName, idx) => {
+            try {
+                if (idx % REPORT_EVERY === 0) console.log(`${idx/numProjs}`);
+                let project = new Project(DATASET_PATH + fileName);
+                let projectText = project.toString();
+                if (projectText.length > 3) {
+                    outStream.write(projectText + '\n');
+                }
+            } catch (e) {
+                /* handle error */
+                corruptedProjs++;
+                // console.error(e);
+            }
         })
+        console.log('corruptedProjs', corruptedProjs);
     })
     .catch(console.error);
 
