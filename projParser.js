@@ -83,10 +83,18 @@ function parseSprite(spriteEl){
     return sprite;
 }
 
+// each script = sentence
 function parseScript(scriptEl){
-    // TODO update
     return scriptEl.children.map( blk => blk.attributes.s);
 }
+
+function cleanupBlockSpec(blkSpec) {
+    return blkSpec.replace(/\s+/g, '_');
+}
+function scriptToString(scriptEl) {
+    return parseScript(scriptEl).map(cleanupBlockSpec).join(' ');
+}
+
 
 
 // scripts or stage 
@@ -131,13 +139,14 @@ const baseStructure = {
 
 
 extractRoles(rootEl).forEach(roleEl => {
-    let role = parseRole(roleEl);
-    role.sprites.forEach( spriteEl => {
-        let sprite = parseSprite(spriteEl);
-        sprite.scripts.forEach(scriptEl => {
-            console.log(parseScript(scriptEl));
+    parseRole(roleEl).sprites
+        .map(parseSprite)
+        .map(sprite => sprite.scripts)
+        .reduce((acc, b) => acc.concat(b), [])
+        .filter(script => script.children.length > 1)
+        .forEach(scriptEl => {
+            console.log(scriptToString(scriptEl));
         });
-    })
 });
 
 // console.log(detectType(rootEl));
