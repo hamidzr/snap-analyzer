@@ -2,10 +2,16 @@ const fse = require('fs-extra'),
     fs = require('fs'),
     jq = require('json-query'),
     inspect = require('util').inspect,
+    program = require('commander'),
     _ = require('lodash');
 
+program
+    .option('-o, --output <output>', 'output file location')
+    .option('-i, --input <input>', 'projects directory')
+    .parse(process.argv);
+
 // get the dataset directory location
-const DATASET_PATH = process.argv[2] || './data/';
+const DATASET_PATH = program.input;
 
 // const filePath = process.argv[2];
 // if (! filePath) throw('pass in a project or role xml');
@@ -41,16 +47,23 @@ class Project {
     }
 
     toString(){
-        return this.sprites().map(sprite => {
-            if (!sprite.scripts) return;
-            return sprite.scripts.map(script => script.join(' ')).join('. ');
-        }).join('. ');
+        const BLOCK_SEPARATOR = ' ';
+        const SCRIPT_SEPARATOR = ' ESC ';
+        const SPRITE_SEPARATOR = ' ESP ';
+        const ROLE_SEPARATOR = '\n'; // or proj separator in this case
+        return this.sprites()
+            .filter(sprite => sprite.scripts)
+            .map(sprite => {
+                return sprite.scripts
+                    .map(script => script.join(BLOCK_SEPARATOR))
+                    .join(SCRIPT_SEPARATOR);
+            }).join(SPRITE_SEPARATOR);
     }
 
 }
 
-let outFile = 'scratchProjectTexts.txt';
-let outStream = fs.createWriteStream(outFile);
+let outFile = program.output || 'scratchProjectTexts.txt';
+let outStream = fs.createWriteStream(outFile, {flags: 'w'});
 let corruptedProjs = 0;
 fse.readdir(DATASET_PATH)
     .then( projNames => {
