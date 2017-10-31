@@ -11,7 +11,8 @@ program
     .parse(process.argv);
 
 // get the dataset directory location
-const DATASET_PATH = program.input;
+const DATASET_PATH = program.input,
+    MIN_SCRIPT_LENGTH = 2;
 
 // const filePath = process.argv[2];
 // if (! filePath) throw('pass in a project or role xml');
@@ -55,9 +56,12 @@ class Project {
             .filter(sprite => sprite.scripts)
             .map(sprite => {
                 return sprite.scripts
+                    .filter(script => script.length > MIN_SCRIPT_LENGTH)
                     .map(script => script.join(BLOCK_SEPARATOR))
                     .join(SCRIPT_SEPARATOR);
-            }).join(SPRITE_SEPARATOR);
+            })
+            .filter(sprite => sprite.length > 0)
+            .join(SPRITE_SEPARATOR);
     }
 
 }
